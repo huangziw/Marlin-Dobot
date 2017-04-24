@@ -1,0 +1,68 @@
+初步方案：更改marlin支持dobot结构，，其余可以不用改动。搜索跟宏定义相关的程序部分。
+搜索scara定位文件：
+	1.Conditionals.h
+	2.configuration.h
+	3.configuration_store.cpp
+	4.marlin.h
+	5.Marlin_main.cpp
+	6.sanitycheck.h
+	7.ultralcd.cpp
+工作量评估：
+	4是主要工作量。
+	粗略整理有：
+	1.void calculate_SCARA_forward_Transform(float f_scara[3]) 
+     // Perform forward kinematics, and place results in delta[3]
+	2.void calculate_delta(float cartesian[3]) {
+     //reverse kinematics.
+     // Perform reversed kinematics, and place results in delta[3]
+	3.
+	 #if ENABLED(SCARA)
+     float delta_segments_per_second = SCARA_SEGMENTS_PER_SECOND;
+     static float delta[3] = { 0 };
+     float axis_scaling[3] = { 1, 1, 1 };    // Build size scaling, default to 1
+	 #endif
+	4.
+	 #if ENABLED(DELTA) || ENABLED(SCARA)
+     inline void sync_plan_position_delta() {}
+	 #endif
+	5.初始化
+	void setup{}
+	6.归零
+	static void set_axis_is_at_home(AxisEnum axis)
+	7.
+	 inline void gcode_G28(){}
+	 inline void gcode_M114() {}
+	 inline void gcode_M206() {}
+	 inline bool gcode_M360() {} ~ inline bool gcode_M365() {}
+	8.
+	 void process_next_command() {void process_next_command() {}}
+	9.
+	 inline bool prepare_move_scara(float target[NUM_AXIS]) { return prepare_move_delta(target); }
+	10.
+	inline bool prepare_move_delta(float target[NUM_AXIS]) {}
+	11.
+	 void prepare_move() {}
+	12.
+	 void plan_arc(）{}
+	3.G-code增加
+	 * ************ SCARA Specific - This can change to suit future G-code regulations
+	 * M360 - SCARA calibration: Move to cal-position ThetaA (0 deg calibration)
+	 * M361 - SCARA calibration: Move to cal-position ThetaB (90 deg calibration - steps per degree)
+	 * M362 - SCARA calibration: Move to cal-position PsiA (0 deg calibration)
+	 * M363 - SCARA calibration: Move to cal-position PsiB (90 deg calibration - steps per degree)
+	 * M364 - SCARA calibration: Move to cal-position PSIC (90 deg to Theta calibration position)
+	 * M365 - SCARA calibration: Scaling factor, X, Y, Z axis
+	 * ************* SCARA End 上***************
+	14.定义等
+	 Conditionals.h, configuration.h中关于dobot定义
+	 EEPROM_WRITE_VAR
+	 EEPROM_READ_VAR
+	 SERIAL_ECHOLNPGM
+	 _MOVE_XYZ_ALLOWED
+	 MENU_ITEM_EDIT
+	 _KEYPAD_MOVE_ALLOWED
+	15.
+	 上位机软件编写
+可能存在问题：（再补充）
+1.控制板的处理器不支持浮点运算，导致运算比较慢，最终导致机械臂运动不流畅。
+
